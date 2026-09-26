@@ -81,7 +81,7 @@ def _summarize_via_modal(text: str, language_name: str, max_new_tokens: int = 12
         endpoint,
         json={"text": text, "language": language_name, "max_new_tokens": max_new_tokens},
         headers={"Authorization": f"Bearer {token}"},
-        timeout=90,
+        timeout=600,  # first-ever cold start can involve a large model download
     )
     if response.status_code != 200:
         raise GroundedSummarizerError(

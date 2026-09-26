@@ -34,6 +34,13 @@ import modal
 # --------------------------------------------------------------------------
 
 app = modal.App("pdf-rag-summarizer")
+rag_secret = modal.Secret.from_name("rag-auth-token")
+
+
+# Persists downloaded model weights across container restarts. Without
+# this, every cold start re-downloads Llama-3.1-8B (~16GB) from Hugging
+# Face from scratch, which is what was causing every chunk to time out.
+hf_cache_volume = modal.Volume.from_name("hf-cache", create_if_missing=True)
 
 # Single image shared by both GPU classes. Kept in one image for simplicity;
 # split into two images later if cold-start size becomes an issue.
@@ -48,6 +55,7 @@ image = (
         "fastapi[standard]==0.115.0",
         "pydantic==2.9.2",
     )
+    .env({"HF_HOME": "/cache/huggingface"})
 )
 
 # Separate image for YarnGPT: it needs its own dependency set (outetts,
@@ -82,6 +90,7 @@ yarngpt_image = (
         "wavtokenizer_mediumdata_frame75_3s_nq1_code4096_dim512_kmeans200_attn.yaml",
         "gdown 1-ASeEkrn4HY49yZWHTASgfGFNXdVnLTt -O /root/wavtokenizer_model.ckpt",
     )
+    .env({"HF_HOME": "/cache/huggingface"})
 )
 
 # --------------------------------------------------------------------------
@@ -153,7 +162,10 @@ class YarnGPTResponse(BaseModel):
 @app.cls(
     image=image,
     gpu="A10G",
-    scaledown_window=120,  # keep container warm for 2 min after last request
+    scaledown_window=120,
+    volumes={"/cache": hf_cache_volume},
+    timeout=600,
+    secrets=[rag_secret]
 )
 class Embedder:
     @modal.enter()
@@ -206,6 +218,8 @@ TRANSLATION_SYSTEM_PROMPT = (
     gpu="A10G",
     scaledown_window=120,
     secrets=[modal.Secret.from_name("hf-token")],
+    volumes={"/cache": hf_cache_volume},
+    timeout=900,  # generous headroom for a cold first-ever download of ~16GB
 )
 class Summarizer:
     @modal.enter()
@@ -324,6 +338,8 @@ YARNGPT_VOICES = {
     image=yarngpt_image,
     gpu="A10G",
     scaledown_window=120,
+    volumes={"/cache": hf_cache_volume},
+    timeout=600,
 )
 class YarnGPTSynthesizer:
     @modal.enter()

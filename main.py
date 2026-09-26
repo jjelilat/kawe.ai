@@ -13,9 +13,7 @@ Flow:
     6. If audio language != summary language, translate via Modal first
     7. Route to ElevenLabs (English) or YarnGPT via Modal (Yoruba/Igbo/Hausa)
 """
-from dotenv import load_dotenv
 
-load_dotenv()
 import base64
 import os
 import tempfile
@@ -71,7 +69,7 @@ def call_modal_translate(text: str, target_language: str) -> str:
         MODAL_TRANSLATE_URL,
         json={"text": text, "target_language": target_language},
         headers={"Authorization": f"Bearer {RAG_AUTH_TOKEN}"},
-        timeout=90,
+        timeout=300,
     )
     response.raise_for_status()
     return response.json()["translated_text"]
@@ -82,7 +80,7 @@ def call_modal_yarngpt(text: str, language: str, speaker_name: str) -> bytes:
         MODAL_YARNGPT_URL,
         json={"text": text, "language": language, "speaker_name": speaker_name},
         headers={"Authorization": f"Bearer {RAG_AUTH_TOKEN}"},
-        timeout=180,
+        timeout=600,
     )
     response.raise_for_status()
     audio_b64 = response.json()["audio_base64"]

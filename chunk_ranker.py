@@ -90,7 +90,7 @@ def _embed_via_modal(texts: List[str]) -> List[List[float]]:
             endpoint,
             json={"texts": texts},
             headers={"Authorization": f"Bearer {token}"},
-            timeout=60,
+            timeout=300,
         )
     except requests.RequestException as e:
         raise ChunkRankerError(f"Could not reach embedding endpoint: {e}") from e
