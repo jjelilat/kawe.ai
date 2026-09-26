@@ -26,6 +26,7 @@ Required Modal secrets (create once via `modal secret create ...`):
 
 import os
 from typing import List
+from fastapi import Header
 
 import modal
 
@@ -183,7 +184,7 @@ class Embedder:
         return vectors.tolist()
 
     @modal.fastapi_endpoint(method="POST")
-    def embed_endpoint(self, request: EmbedRequest, authorization: str = None):
+    def embed_endpoint(self, request: EmbedRequest, authorization: str = Header(None)):
         _check_auth(authorization)
         vectors = self.embed.local(request.texts)
         return EmbedResponse(embeddings=vectors)
@@ -217,7 +218,7 @@ TRANSLATION_SYSTEM_PROMPT = (
     image=image,
     gpu="A10G",
     scaledown_window=120,
-    secrets=[modal.Secret.from_name("hf-token")],
+    secrets=[modal.Secret.from_name("hf-token"), rag_secret],
     volumes={"/cache": hf_cache_volume},
     timeout=900,  # generous headroom for a cold first-ever download of ~16GB
 )
@@ -275,7 +276,7 @@ class Summarizer:
         return self.tokenizer.decode(generated, skip_special_tokens=True).strip()
 
     @modal.fastapi_endpoint(method="POST")
-    def summarize_endpoint(self, request: SummarizeRequest, authorization: str = None):
+    def summarize_endpoint(self, request: SummarizeRequest, authorization: str = Header(None)):
         _check_auth(authorization)
         summary = self.summarize.local(
             request.text, request.max_new_tokens, request.language
@@ -310,22 +311,13 @@ class Summarizer:
         return self.tokenizer.decode(generated, skip_special_tokens=True).strip()
 
     @modal.fastapi_endpoint(method="POST")
-    def translate_endpoint(self, request: TranslateRequest, authorization: str = None):
+    def translate_endpoint(self, request: TranslateRequest, authorization: str = Header(None)):
         _check_auth(authorization)
         translated = self.translate.local(
             request.text, request.target_language, request.max_new_tokens
         )
         return TranslateResponse(translated_text=translated)
 
-
-# --------------------------------------------------------------------------
-# YarnGPT: Nigerian-accented TTS (English, Yoruba, Igbo, Hausa)
-# --------------------------------------------------------------------------
-# Voices as documented on the saheedniyi/YarnGPT2 model card, arranged by
-# the author in order of performance/stability. Note: "yoruba_feamle1" and
-# "hausa_feamle1" are typo'd in the upstream model itself (not a typo on
-# our end) — these exact strings are the real speaker_name values the
-# model expects, so they're preserved as-is rather than "corrected."
 YARNGPT_VOICES = {
     "english": ["idera", "chinenye", "jude", "emma", "umar", "joke", "zainab", "osagie", "remi", "tayo"],
     "yoruba": ["yoruba_male2", "yoruba_female2", "yoruba_feamle1"],
@@ -339,6 +331,7 @@ YARNGPT_VOICES = {
     gpu="A10G",
     scaledown_window=120,
     volumes={"/cache": hf_cache_volume},
+    secrets=[rag_secret],
     timeout=600,
 )
 class YarnGPTSynthesizer:
@@ -394,7 +387,7 @@ class YarnGPTSynthesizer:
         return buffer.getvalue()
 
     @modal.fastapi_endpoint(method="POST")
-    def synthesize_endpoint(self, request: YarnGPTRequest, authorization: str = None):
+    def synthesize_endpoint(self, request: YarnGPTRequest, authorization: str = Header(None)):
         import base64
 
         _check_auth(authorization)

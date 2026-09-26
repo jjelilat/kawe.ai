@@ -18,4 +18,9 @@ __pycache__/
 .env.*
 *.pem
 *.key
-credentials.json
+credentials.json.venv/
+__pycache__/
+*.pyc
+summarize_test.json
+translate_test.json
+.venv2/
