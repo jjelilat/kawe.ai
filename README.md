@@ -1,81 +1,62 @@
-# Text-to-Audio Summarizer (Final Year Project)
+# Kàwé
 
-## Mini Intro
+**Read smart. Listen better.**
 
-This project is an NLP-based system developed as part of my undergraduate final year project. It allows users to upload PDF or Word documents, automatically summarizes the content using cosine similarity, and generates an audio version of the summary in the document’s original language.
-The goal is to help students quickly understand large volumes of text through concise summaries and audio playback.
+Kàwé turns long documents into clear, listenable summaries. Upload a document, choose how much of it you want to keep, select an audio language and voice, then listen or download the result.
 
----
+It is designed for people who need to understand documents quickly without reading every page.
 
-## Features
+## What Kàwé does
 
-* Upload and process PDF/Word documents
-* Text summarization using cosine similarity
-* Text-to-Speech (TTS) audio generation
-* Language detection and translation support
-* Efficient handling of large documents
+- Extracts text from PDF and Word documents
+- Produces concise, source-grounded summaries
+- Lets users control the desired summary length
+- Supports audio generation in selected languages
+- Offers a choice of available TTS voices
+- Lets users listen to or download generated audio
 
----
+## Flow
 
-## Libraries
+1. Upload a document
+2. Choose a summary length
+3. Select a summary or audio language
+4. Choose a voice
+5. Generate, listen to, and download the audio summary
 
-The project uses the following Python libraries:
+## Technology
 
-* `nltk` – Natural Language Processing
-* `num2words` – Converts numbers to words
-* `pdfplumber` – Extract text from PDFs
-* `PyPDF2` – PDF processing
-* `pytesseract` – OCR for scanned documents
-* `Pillow` – Image processing
-* `langdetect` – Language detection
-* `googletrans==3.1.0a0` – Translation support
-* `gTTS` – Text-to-Speech conversion
-* `transformers` – Advanced NLP models
-* `networkx` – Graph-based ranking (for summarization)
-* `scipy` – Cosine similarity calculations
-* `ipykernel` – Jupyter Notebook support
+Kàwé uses Python and Streamlit for the app experience, document extraction tools for PDF and Word files, semantic ranking and language models for summarization, and text-to-speech providers such as YarnGPT and ElevenLabs for audio generation.
 
----
+## Local development
 
-## How It Works
-
-1. User uploads a document (PDF or Word)
-2. Text is extracted from the file
-3. If needed, OCR is applied to scanned documents
-4. Language of the text is detected
-5. Sentences are ranked using cosine similarity
-6. A summary is generated
-7. The summary is converted to speech using TTS
-8. Audio output is returned to the user
-
----
-
-## Installation
+From the project folder:
 
 ```bash
-git clone https://github.com/th3realAyo/nlp-text-to-speech-summarization-system.git
-cd nlp-text-to-speech-summarization-system
-pip install -r requirements.txt
+python -m venv .venv
 ```
 
----
+On Windows:
 
-## Usage
-
-```bash
-python main.py
+```powershell
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt streamlit numpy requests python-docx modal elevenlabs python-dotenv
+.\.venv\Scripts\python.exe -m streamlit run main.py
 ```
 
----
+The current local interface is being expanded to include the full Kàwé workflow: configurable summary length, document language handling, and provider/voice selection.
 
-## Future Improvements
+## Configuration
 
-* Improve summarization using transformer-based models
-* Add real-time streaming audio output
-* Build a web/mobile interface
-* Support more file formats
+Keep API credentials in environment variables or your deployment platform's secret manager. Do not commit them to the repository.
 
----
+```env
+MODAL_EMBED_URL=
+MODAL_SUMMARIZE_URL=
+RAG_AUTH_TOKEN=
+ELEVENLABS_API_KEY=
+YARNGPT_API_KEY=
+```
 
-## Author
-Adegunte Damilola
+## Status
+
+Kàwé is actively being developed. The product direction is a secure document-to-summary-to-audio experience with flexible language and voice choices.
