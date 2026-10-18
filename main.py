@@ -5,6 +5,11 @@ import tempfile
 import requests
 import streamlit as st
 from dotenv import load_dotenv
+
+# Load local development secrets before importing modules that initialize
+# service clients from environment variables.
+load_dotenv()
+
 from langdetect import detect
 
 from doc_loader import (
@@ -20,8 +25,7 @@ from grounded_summarizer import (
     generate_grounded_summary,
 )
 from main_integration_snippet import log_document_outcome, require_signup
-
-load_dotenv()
+from product_metrics import build_summary_metrics, validate_upload_size
 
 MODAL_TRANSLATE_URL = os.environ.get("MODAL_TRANSLATE_URL")
 MODAL_YARNGPT_URL = os.environ.get("MODAL_YARNGPT_URL")
@@ -93,14 +97,20 @@ def reset_downstream_state():
 
 
 def main():  # sourcery skip: low-code-quality
-    st.title("Grounded PDF/Word Summarizer")
-    st.caption("Every summary section is traceable to the exact passage it came from.")
+    st.title("Kàwé")
+    st.caption("Read smart. Listen better. Every summary section is traceable to its source.")
 
     user_id = require_signup()
 
     uploaded_file = st.file_uploader("Upload a PDF or Word document", type=["pdf", "docx"])
 
     if uploaded_file is None:
+        return
+
+    try:
+        validate_upload_size(uploaded_file.size)
+    except ValueError as error:
+        st.error(str(error))
         return
 
     # New file uploaded -> wipe any previous document's state
@@ -133,7 +143,7 @@ def main():  # sourcery skip: low-code-quality
 
     st.subheader("1. How much of the document should be summarized?")
     percentage = st.slider(
-        "Percentage of docum5ent to summarize", min_value=10, max_value=80, value=30, step=10
+        "Percentage of document to summarize", min_value=10, max_value=80, value=30, step=10
     )
 
     if st.button("Generate grounded summary"):
@@ -195,6 +205,19 @@ def main():  # sourcery skip: low-code-quality
         st.caption(f"Note: {result.skipped_chunks} section(s) couldn't be summarized and were skipped.")
 
     st.write(result.full_text)
+
+    metrics = build_summary_metrics(document_length_words, result.full_text)
+    metric_columns = st.columns(3)
+    metric_columns[0].metric("Source length", f"{metrics.source_words:,} words")
+    metric_columns[1].metric("Summary length", f"{metrics.summary_words:,} words")
+    metric_columns[2].metric(
+        "Estimated listening time",
+        f"{metrics.estimated_listening_minutes} min" if metrics.estimated_listening_minutes else "Under 1 min",
+        help="Estimated at roughly 150 words per minute.",
+    )
+    st.caption(
+        f"This summary is about {metrics.compression_percentage}% of the source document."
+    )
 
     st.markdown("**Citations — see exactly where each part came from:**")
     render_citations(result.sections)
